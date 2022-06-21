@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
+const bcrypt = require("bcryptjs/dist/bcrypt");
 
-const User = mongoose.model("User", {
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -34,6 +35,20 @@ const User = mongoose.model("User", {
         type: Number,
         default: 0
     }
+});
+
+// Middleware
+// We have used normal function because we reference this to the user
+userSchema.pre("save", async function (next) {
+    const user = this;
+
+    // It runs when new user created or existing user gets update
+    if (user.isModified("password")) {
+        user.password = await bcrypt.hash(user.password, 8);
+    }
+
+    next();
 })
 
+const User = mongoose.model("User", userSchema)
 module.exports = User;
