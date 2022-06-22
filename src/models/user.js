@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Task = require("./task");
 
 
 const userSchema = new mongoose.Schema({
@@ -45,6 +46,13 @@ const userSchema = new mongoose.Schema({
     }]
 });
 
+// Connection between User and Task
+userSchema.virtual("tasks", {
+    ref: "Task",
+    localField: "_id",
+    foreignField: "owner"
+})
+
 // This method is for Whole User collection
 userSchema.statics.findByCredentials = async (email, password) => {
     const user = await User.findOne({ email });
@@ -69,6 +77,16 @@ userSchema.methods.generateAuthToken = async function () {
     return token;
 }
 
+// Will not send password, tokens (toJSON is used to return only selected data witout calling)
+userSchema.methods.toJSON = function () {
+    const user = this
+    const userObj = user.toObject();
+    delete userObj.password;
+    delete userObj.tokens;
+
+    return userObj;
+}
+
 // Middleware
 // We have used normal function because we reference this to the user
 userSchema.pre("save", async function (next) {
@@ -79,6 +97,13 @@ userSchema.pre("save", async function (next) {
         user.password = await bcrypt.hash(user.password, 8);
     }
 
+    next();
+})
+
+// Delete all tasks of that user when we delete the user
+userSchema.pre("remove", async function (next) {
+    const user = this;
+    await Task.deleteMany({ owner: user._id });
     next();
 })
 
