@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-const bcrypt = require("bcryptjs/dist/bcrypt");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -34,15 +36,45 @@ const userSchema = new mongoose.Schema({
     age: {
         type: Number,
         default: 0
-    }
+    },
+    tokens: [{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 });
+
+// This method is for Whole User collection
+userSchema.statics.findByCredentials = async (email, password) => {
+    const user = await User.findOne({ email });
+
+    if (!user)
+        throw new Error("Invalid Credentials");
+
+    const authorized = await bcrypt.compare(password, user.password);
+
+    if (!authorized)
+        throw new Error("Invalid Credentials");
+
+    return user;
+}
+
+// This method is for particular user
+userSchema.methods.generateAuthToken = async function () {
+    const user = this;
+    const token = jwt.sign({ id: user._id.toString() }, "thisismysecret");
+    user.tokens = user.tokens.concat({ token });
+    user.save();
+    return token;
+}
 
 // Middleware
 // We have used normal function because we reference this to the user
 userSchema.pre("save", async function (next) {
     const user = this;
 
-    // It runs when new user created or existing user gets update
+    // It runs when new user is created or existing user gets update
     if (user.isModified("password")) {
         user.password = await bcrypt.hash(user.password, 8);
     }

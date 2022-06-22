@@ -1,26 +1,35 @@
 const express = require("express");
 const router = new express.Router();
 const User = require("../models/user");
+const auth = require("../middleware/auth");
+
 
 // Create New User 
 router.post("/users", async (req, res) => {
     const newUser = new User(req.body);
     try {
         await newUser.save();
-        res.status(201).send(newUser);
+        const token = await newUser.generateAuthToken();
+        res.status(201).send({ signup: "success", newUser, token });
     } catch (error) {
         res.status(400).send(error);
     }
 })
 
-// Fetch all Users
-router.get("/users", async (req, res) => {
+// User Login
+router.post("/users/login", async (req, res) => {
     try {
-        const users = await User.find({});
-        res.send(users);
+        const user = await User.findByCredentials(req.body.email, req.body.password);
+        const token = await user.generateAuthToken();
+        res.send({ login: "success", user, token });
     } catch (error) {
-        res.status(404).send(error);
+        res.status(400).send("Invalid credentials");
     }
+})
+
+// Fetch User Profile
+router.get("/users/me", auth, async (req, res) => {
+    res.send(req.user);
 })
 
 // Fetch User by id (:id => dynamic id)
