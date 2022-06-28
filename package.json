@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "app": "env-cmd nodemon src/index.js",
-    "test": "env-cmd jest --watch"
+    "test": "env-cmd jest --watchAll --runInBand"
   },
   "jest": {
     "testEnvironment": "node"
@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "jest": "^28.1.1",
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.16",
+    "supertest": "^6.2.3"
   }
 }

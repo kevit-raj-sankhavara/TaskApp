@@ -14,7 +14,7 @@ router.post("/users", async (req, res) => {
 
     try {
         await newUser.save();
-        // sendWelcomeEmail(newUser.email, newUser.name);
+        sendWelcomeEmail(newUser.email, newUser.name);
         const token = await newUser.generateAuthToken();
         res.status(201).send({ signup: "success", newUser, token });
     } catch (error) {
@@ -66,8 +66,7 @@ router.patch("/users/me", auth, async (req, res) => {
     const isValid = updates.every((element) => allowUpdates.includes(element));
 
     if (!isValid)
-        return res.status(400);
-
+        return res.status(400).send();
 
     try {
         updates.forEach((element) => {
